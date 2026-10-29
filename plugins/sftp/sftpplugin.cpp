@@ -11,13 +11,11 @@
 #include <QDir>
 #include <QStandardPaths>
 
-#include <KIO/OpenUrlJob>
+#include <QDesktopServices>
 #include <KLocalizedString>
 #include <KNotification>
-#include <KNotificationJobUiDelegate>
 #include <KPluginFactory>
 
-#include <Solid/DeviceNotifier>
 
 #include "daemon.h"
 #include "mounter.h"
@@ -30,56 +28,12 @@ SftpPlugin::SftpPlugin(QObject *parent, const QVariantList &args)
     , m_mounter(nullptr)
     , deviceId(device()->id())
 {
-    addToDolphin();
     qCDebug(KDECONNECT_PLUGIN_SFTP) << "Created device:" << device()->name();
 }
 
 SftpPlugin::~SftpPlugin()
 {
-    removeFromDolphin();
     unmount();
-}
-
-void SftpPlugin::addToDolphin()
-{
-    removeFromDolphin();
-
-    static bool s_hasSolidBackend = [] {
-        // Initialize solid.
-        const auto notifier = Solid::DeviceNotifier::instance();
-        Q_UNUSED(notifier);
-
-        return QCoreApplication::instance()->property("_kde_solid_has_kdeconnect_backend").toBool();
-    }();
-
-    if (s_hasSolidBackend) {
-        qCDebug(KDECONNECT_PLUGIN_SFTP) << "not adding to dolphin, Solid KDE Connect backend available";
-        return;
-    }
-
-    QUrl kioUrl(QStringLiteral("kdeconnect://") + deviceId + QStringLiteral("/"));
-    m_placesModel.addPlace(device()->name(), kioUrl, QStringLiteral("kdeconnect"));
-    qCDebug(KDECONNECT_PLUGIN_SFTP) << "add to dolphin";
-}
-
-void SftpPlugin::removeFromDolphin()
-{
-    QUrl kioUrl(QStringLiteral("kdeconnect://") + deviceId + QStringLiteral("/"));
-    for (int i = 0; i < m_placesModel.rowCount(); ++i) {
-        QModelIndex index = m_placesModel.index(i, 0);
-        // Skip Solid device entries: when the KDE Connect Solid backend is installed, each device
-        // shows up in the places model with a kdeconnect://<deviceId>/ URL that matches kioUrl.
-        // removePlace() is a no-op for device items, so trying to remove one here would never
-        // decrease rowCount() and the --i below would spin on the same row forever (100% CPU hang).
-        if (m_placesModel.isDevice(index)) {
-            continue;
-        }
-        QUrl url = m_placesModel.url(index);
-        if (url == kioUrl) {
-            m_placesModel.removePlace(index);
-            --i;
-        }
-    }
 }
 
 void SftpPlugin::mount()
@@ -125,9 +79,7 @@ QString SftpPlugin::getMountError()
 bool SftpPlugin::startBrowsing()
 {
     if (mountAndWait()) {
-        auto *job = new KIO::OpenUrlJob(QUrl(QStringLiteral("kdeconnect://") + deviceId + QStringLiteral("/")));
-        job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
-        job->start();
+        QDesktopServices::openUrl(QUrl::fromLocalFile(mountPoint()));
         return true;
     }
     return false;

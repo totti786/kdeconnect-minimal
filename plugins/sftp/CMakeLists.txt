@@ -19,8 +19,5 @@ target_link_libraries(kdeconnect_sftp
     kdeconnectcore
     Qt::DBus
     KF6::I18n
-    KF6::KIOFileWidgets
-    KF6::KIOWidgets
     KF6::Notifications
-    KF6::Solid
 )
