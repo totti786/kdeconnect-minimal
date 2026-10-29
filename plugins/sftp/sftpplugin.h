@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <KFilePlacesModel>
 #include <core/device.h>
 #include <core/kdeconnectplugin.h>
 
@@ -48,10 +47,6 @@ private Q_SLOTS:
 
 private:
     void knotify(int type, const QString &text, const QPixmap &icon) const;
-    void addToDolphin();
-    void removeFromDolphin();
-    // Add KIO entry to Dolphin's Places
-    KFilePlacesModel m_placesModel;
     Mounter *m_mounter;
     QString deviceId; // Storing it to avoid accessing device() from the destructor which could cause a crash
 
