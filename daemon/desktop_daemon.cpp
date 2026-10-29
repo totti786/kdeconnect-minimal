@@ -12,8 +12,7 @@
 #include <QTimer>
 
 #include <KDBusService>
-#include <KIO/Global>
-#include <KIO/JobTracker>
+#include <KJobTrackerInterface>
 #include <KLocalizedString>
 #include <KNotification>
 
@@ -62,7 +61,9 @@ void DesktopDaemon::reportError(const QString &title, const QString &text)
 
 KJobTrackerInterface *DesktopDaemon::jobTracker()
 {
-    return KIO::getJobTracker();
+    // No UI job tracker without KIO; the base interface is a harmless no-op
+    static KJobTrackerInterface tracker;
+    return &tracker;
 }
 
 // NOTE: eventId must match a notificatiion event id defined in plugins/kdeconnect.notifyrc

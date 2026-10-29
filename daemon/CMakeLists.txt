@@ -8,14 +8,11 @@ ecm_qt_declare_logging_category(kdeconnectd
 target_link_libraries(kdeconnectd
     kdeconnectcore
     kdeconnectversion
-    KF6::ColorScheme
-    KF6::KIOWidgets
     KF6::DBusAddons
     KF6::Notifications
     KF6::I18n
     KF6::WindowSystem
     KF6::Crash
-    Qt::QuickControls2
     Qt::Widgets)
 
 ecm_mark_nongui_executable(kdeconnectd)
