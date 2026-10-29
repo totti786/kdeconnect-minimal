@@ -15,10 +15,6 @@
 #include <QStandardPaths>
 #include <QTemporaryFile>
 
-#include <KApplicationTrader>
-#include <KIO/Job>
-#include <KIO/MkpathJob>
-#include <KIO/OpenUrlJob>
 #include <KJobTrackerInterface>
 #include <KLocalizedString>
 #include <KNotification>
@@ -46,9 +42,7 @@ QUrl SharePlugin::destinationDir() const
         dir.setPath(dir.path().arg(device()->name()));
     }
 
-    KJob *job = KIO::mkpath(dir);
-    bool ret = job->exec();
-    if (!ret) {
+    if (!QDir().mkpath(dir.toLocalFile())) {
         qWarning() << "couldn't create" << dir;
     }
 
@@ -161,41 +155,21 @@ void SharePlugin::receivePacket(const NetworkPacket &np)
         notif->setText(text);
         notif->setTitle(i18nc("@info Some piece of text was received from a connected device", "Shared text from %1 copied to clipboard", device()->name()));
 
-        auto openTextEditor = [this, text, notif] {
-            KService::Ptr service = KApplicationTrader::preferredService(QStringLiteral("text/plain"));
-            const QString defaultApp = service ? service->desktopEntryName() : QString();
+        auto openTextEditor = [this, text] {
+            QTemporaryFile tmpFile;
+            tmpFile.setFileTemplate(QStringLiteral("kdeconnect-XXXXXX.txt"));
+            tmpFile.setAutoRemove(false);
+            tmpFile.open();
+            tmpFile.write(text.toUtf8());
+            tmpFile.close();
 
-            if (defaultApp == QLatin1String("org.kde.kate") || defaultApp == QLatin1String("org.kde.kwrite")) {
-                QProcess *proc = new QProcess();
-                connect(proc, &QProcess::finished, proc, &QObject::deleteLater);
-                if (const QString token = notif->xdgActivationToken(); !token.isEmpty()) {
-                    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-                    env.insert(QStringLiteral("XDG_ACTIVATION_TOKEN"), token);
-                    proc->setProcessEnvironment(env);
-                }
-                proc->start(defaultApp.section(QStringLiteral("."), 2, 2), QStringList(QStringLiteral("--stdin")));
-                proc->write(text.toUtf8());
-                proc->closeWriteChannel();
-            } else {
-                QTemporaryFile tmpFile;
-                tmpFile.setFileTemplate(QStringLiteral("kdeconnect-XXXXXX.txt"));
-                tmpFile.setAutoRemove(false);
-                tmpFile.open();
-                tmpFile.write(text.toUtf8());
-                tmpFile.close();
-
-                const QString fileName = tmpFile.fileName();
-                auto *job = new KIO::OpenUrlJob(QUrl::fromLocalFile(fileName), QStringLiteral("text/plain"));
-                job->setStartupId(notif->xdgActivationToken().toUtf8());
-                job->start();
-                Q_EMIT shareReceived(fileName);
-            }
+            const QString fileName = tmpFile.fileName();
+            QDesktopServices::openUrl(QUrl::fromLocalFile(fileName));
+            Q_EMIT shareReceived(fileName);
         };
 
-        auto openUrl = [this, url, notif] {
-            auto *job = new KIO::OpenUrlJob(url);
-            job->setStartupId(notif->xdgActivationToken().toUtf8());
-            job->start();
+        auto openUrl = [this, url] {
+            QDesktopServices::openUrl(url);
             Q_EMIT shareReceived(url.toString());
         };
 
