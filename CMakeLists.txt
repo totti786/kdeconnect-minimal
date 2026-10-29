@@ -70,19 +70,6 @@ ecm_set_disabled_deprecation_versions(
 add_library(kdeconnectversion INTERFACE)
 target_include_directories(kdeconnectversion INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 
-set_package_properties(KF6Kirigami2 PROPERTIES
-    DESCRIPTION "QtQuick plugins to build user interfaces based on KDE UX guidelines"
-    PURPOSE "Required for KDE Connect's QML-based GUI applications"
-    URL "https://www.kde.org/products/kirigami/"
-    TYPE RUNTIME
-)
-
-find_package(KF6KirigamiAddons 0.11 REQUIRED)
-set_package_properties(KF6KirigamiAddons PROPERTIES
-    TYPE REQUIRED
-    PURPOSE "Required runtime dependency (all the modules are required)"
-)
-
 if(UNIX AND NOT APPLE)
     option(WITH_X11 "Build with X11 support" ON)
     option(WITH_PULSEAUDIO "Build with Pulseaudio support" ON)
@@ -98,7 +85,6 @@ else()
 endif()
 
 if(UNIX AND NOT APPLE)
-    find_package(KF6Package REQUIRED)
     if (WITH_PULSEAUDIO)
         find_package(KF6PulseAudioQt REQUIRED)
     endif()
@@ -111,23 +97,18 @@ if(UNIX AND NOT APPLE)
     pkg_check_modules(DBus REQUIRED IMPORTED_TARGET dbus-1)
 endif()
 
-if (NOT WIN32)
-    find_package(KF6StatusNotifierItem ${KF_MIN_VERSION} REQUIRED)
-endif()
-
 #ecm_find_qmlmodule(org.kde.people 1.0) FIXME This results in KPeople code being called which triggers DBus calls which breaks the Windows CI
-ecm_find_qmlmodule(QtQuick.Particles 2.0)
 
 add_definitions(-DQT_NO_URL_CAST_FROM_STRING -DQT_NO_KEYWORDS -DQT_NO_CAST_FROM_ASCII -DQT_NO_CONTEXTLESS_CONNECT)
 
-find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS DBus Quick QuickWidgets QuickControls2 Network Multimedia)
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS DBus Network Widgets)
 
 if (Qt6Gui_VERSION VERSION_GREATER_EQUAL "6.10.0")
     find_package(Qt6GuiPrivate ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE)
 endif()
 
 find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS I18n DBusAddons IconThemes Notifications
-    KIO ColorScheme Service Solid Kirigami People WindowSystem GuiAddons Crash ItemModels WidgetsAddons)
+    CoreAddons Config Solid WindowSystem GuiAddons Crash)
 
 if (WIN32)
     get_filename_component(WINDOWS_KITS_DIR
@@ -143,25 +124,11 @@ add_subdirectory(plugins)
 add_subdirectory(dbusinterfaces)
 add_subdirectory(models)
 
-find_package(KF6QQC2DesktopStyle ${KF_MIN_VERSION} REQUIRED)
 set_package_properties(KF6QQC2DesktopStyle PROPERTIES TYPE RUNTIME)
 
-add_subdirectory(icons)
-add_subdirectory(data)
 add_subdirectory(cli)
-add_subdirectory(declarativeplugin)
 add_subdirectory(daemon)
-add_subdirectory(app)
-add_subdirectory(indicator)
-add_subdirectory(urlhandler)
-add_subdirectory(nautilus-extension)
-add_subdirectory(fileitemactionplugin)
-add_subdirectory(smsapp)
 
-if(NOT WIN32 AND NOT APPLE)
-    add_subdirectory(kio)
-    add_subdirectory(plasmoid)
-endif()
 
 ki18n_install(po)
 
