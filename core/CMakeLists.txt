@@ -51,9 +51,10 @@ find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 target_link_libraries(kdeconnectcore
 PUBLIC
     Qt::Network
+    Qt::Gui
+    Qt::Widgets
     KF6::CoreAddons
-    KF6::KIOCore
-    KF6::KIOGui
+    KF6::ConfigCore
     OpenSSL::Crypto
 PRIVATE
     Qt::DBus
